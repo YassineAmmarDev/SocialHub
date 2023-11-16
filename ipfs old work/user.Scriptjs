@@ -1,0 +1,52 @@
+const { ethers } = require('hardhat');
+const path = require('path');
+const fs = require('fs');
+const fsPromises = fs.promises;
+// const toBuffer = require('it-to-buffer');
+
+async function main() {
+    console.log('Getting the User contract...\n');
+    const contractAddress = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
+    const user = await ethers.getContractAt('User', contractAddress);
+    const signers = await ethers.getSigners();
+
+
+
+ // Configure the local IPFS node
+ console.log(`Configuring the IPFS instance...`)
+ const { create } = await import('ipfs-http-client');
+//  const ipfs = create();
+const ipfs = create({
+    host: 'localhost',  // IPFS API server host
+    port: 5001,         // IPFS API server port
+    protocol: 'http',   // Use 'http' for local IPFS node
+  });
+  
+ const endpointConfig = await ipfs.getEndpointConfig();
+ console.log(`IPFS configured to connect via: `);
+ console.debug(endpointConfig);
+ console.log(` `)
+
+ // get the email and password from the user contract
+const encryptedEmail = await user.getEmail()
+const encryptedPassword = await user.getPassword()
+const emailCid = await ipfs.add(encryptedEmail);
+const passwordCid = await ipfs.add(encryptedPassword);
+
+    // Store the CIDs in the contract
+    console.log('Storing the CIDs in the contract...');
+    const tx = await user.createAccount(
+        _userName, 
+        emailCid.path, 
+        passwordCid.path, 
+        _bio
+    );
+    await tx.wait();
+    console.log('Email CID:', emailCid.path);
+    console.log('Password CID:', passwordCid.path);
+
+console.log('Email CID:', emailCid.path);
+console.log('Password CID:', passwordCid.path);
+}
+  
+
